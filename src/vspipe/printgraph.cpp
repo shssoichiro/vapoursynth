@@ -258,8 +258,8 @@ std::string printNodeTimes(VSNode *node, double processingTime,
        extendStringLeft("Time (s)", 10) + "\n";
 
   for (const auto &it : lines) {
-    for (int i = 0; i < it.depth; i++) {
-      s += "--";
+    if (it.depth > 0) {
+      s.append(it.depth * 2, '-');
     }
     s += extendStringRight(it.filterName, 30 - it.depth * 2) + " " +
          extendStringRight(filterModeToString(it.filterMode), 10) + " " +
