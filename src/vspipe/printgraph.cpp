@@ -188,6 +188,9 @@ struct NodeTimeRecord {
   int dependency;
 
   bool operator<(const NodeTimeRecord &other) const noexcept {
+    if (depth < other.depth) {
+      return true;
+    }
     if (dependency != other.dependency) {
       return dependency > other.dependency;
     }
