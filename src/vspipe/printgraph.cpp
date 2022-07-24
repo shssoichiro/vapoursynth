@@ -257,7 +257,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
 
   lines.sort();
 
-  s += extendStringRight("Filtername", 30) + " " +
+  s += extendStringRight("Filter name", 80) + " " +
        extendStringRight("Filter mode", 10) + " " +
        extendStringLeft("Time (%)", 10) + " " +
        extendStringLeft("Time (s)", 10) + "\n";
@@ -272,7 +272,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
     for (int i = 0; i < it.depth; i++) {
       s += "--";
     }
-    int indent = 80 - it.depth * 2;
+    int indent = 80 - (maxDepth - it.depth) * 2;
     if (indent < int(it.filterName.length())) {
       indent = it.filterName.length();
     }
