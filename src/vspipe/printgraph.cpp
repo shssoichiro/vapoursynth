@@ -185,27 +185,32 @@ struct NodeTimeRecord {
   int filterMode;
   int64_t nanoSeconds;
   int depth;
+  int dependency;
 
   bool operator<(const NodeTimeRecord &other) const noexcept {
+    if (dependency != other.dependency) {
+      return dependency > other.dependency;
+    }
     return nanoSeconds > other.nanoSeconds;
   }
 };
 
 static void printNodeTimesHelper(std::list<NodeTimeRecord> &lines,
                                  std::set<VSNode *> &visited, VSNode *node,
-                                 const VSAPI *vsapi, int depth) {
+                                 const VSAPI *vsapi, int depth, int dep_idx) {
   if (!visited.insert(node).second)
     return;
 
-  lines.push_back(NodeTimeRecord{vsapi->getNodeName(node),
-                                 vsapi->getNodeFilterMode(node),
-                                 vsapi->getNodeFilterTime(node), depth});
+  lines.push_back(
+      NodeTimeRecord{vsapi->getNodeName(node), vsapi->getNodeFilterMode(node),
+                     vsapi->getNodeFilterTime(node), depth, dep_idx});
 
   int numDeps = vsapi->getNumNodeDependencies(node);
   const VSFilterDependency *deps = vsapi->getNodeDependencies(node);
 
   for (int i = 0; i < numDeps; i++) {
-    printNodeTimesHelper(lines, visited, deps[i].source, vsapi, depth + 1);
+    printNodeTimesHelper(lines, visited, deps[i].source, vsapi, depth + 1,
+                         lines.size() - 1);
   }
 }
 
@@ -248,15 +253,21 @@ std::string printNodeTimes(VSNode *node, double processingTime,
   std::set<VSNode *> visited;
   std::string s;
 
-  printNodeTimesHelper(lines, visited, node, vsapi, 0);
+  printNodeTimesHelper(lines, visited, node, vsapi, 0, -1);
 
-  //   lines.sort();
+  lines.sort();
 
   s += extendStringRight("Filtername", 30) + " " +
        extendStringRight("Filter mode", 10) + " " +
        extendStringLeft("Time (%)", 10) + " " +
        extendStringLeft("Time (s)", 10) + "\n";
 
+  int maxDepth = 0;
+  for (const auto &it : lines) {
+    if (it.depth > maxDepth) {
+      maxDepth = it.depth;
+    }
+  }
   for (const auto &it : lines) {
     for (int i = 0; i < it.depth; i++) {
       s += "--";
