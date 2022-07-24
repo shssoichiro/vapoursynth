@@ -184,6 +184,7 @@ struct NodeTimeRecord {
   std::string filterName;
   int filterMode;
   int64_t nanoSeconds;
+  int depth;
 
   bool operator<(const NodeTimeRecord &other) const noexcept {
     return nanoSeconds > other.nanoSeconds;
@@ -192,19 +193,20 @@ struct NodeTimeRecord {
 
 static void printNodeTimesHelper(std::list<NodeTimeRecord> &lines,
                                  std::set<VSNode *> &visited, VSNode *node,
-                                 const VSAPI *vsapi) {
+                                 const VSAPI *vsapi, int depth) {
   if (!visited.insert(node).second)
     return;
 
   lines.push_back(NodeTimeRecord{vsapi->getNodeName(node),
                                  vsapi->getNodeFilterMode(node),
-                                 vsapi->getNodeFilterTime(node)});
+                                 vsapi->getNodeFilterTime(node), depth});
 
   int numDeps = vsapi->getNumNodeDependencies(node);
   const VSFilterDependency *deps = vsapi->getNodeDependencies(node);
 
-  //   for (int i = 0; i < numDeps; i++)
-  // printNodeTimesHelper(lines, visited, deps[i].source, vsapi);
+  for (int i = 0; i < numDeps; i++) {
+    printNodeTimesHelper(lines, visited, deps[i].source, vsapi, depth + 1);
+  }
 }
 
 static std::string extendStringRight(const std::string &s, size_t length) {
@@ -246,17 +248,20 @@ std::string printNodeTimes(VSNode *node, double processingTime,
   std::set<VSNode *> visited;
   std::string s;
 
-  printNodeTimesHelper(lines, visited, node, vsapi);
+  printNodeTimesHelper(lines, visited, node, vsapi, 0);
 
-  lines.sort();
+  //   lines.sort();
 
-  s += extendStringRight("Filtername", 20) + " " +
+  s += extendStringRight("Filtername", 30) + " " +
        extendStringRight("Filter mode", 10) + " " +
        extendStringLeft("Time (%)", 10) + " " +
        extendStringLeft("Time (s)", 10) + "\n";
 
-  for (const auto &it : lines)
-    s += extendStringRight(it.filterName, 20) + " " +
+  for (const auto &it : lines) {
+    for (int i = 0; i < it.depth; i++) {
+      s += "--";
+    }
+    s += extendStringRight(it.filterName, 30 - it.depth * 2) + " " +
          extendStringRight(filterModeToString(it.filterMode), 10) + " " +
          extendStringLeft(printWithTwoDecimals((it.nanoSeconds) /
                                                (processingTime * 10000000)),
@@ -265,6 +270,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
          extendStringLeft(printWithTwoDecimals(it.nanoSeconds / 1000000000.),
                           10) +
          "\n";
+  }
 
   return s;
 }
