@@ -261,7 +261,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
     if (it.depth > 0) {
       s.append(it.depth * 2, '-');
     }
-    s += extendStringRight(it.filterName, 30 - it.depth * 2) + " " +
+    s += extendStringRight(it.filterName, 30) + " " +
          extendStringRight(filterModeToString(it.filterMode), 10) + " " +
          extendStringLeft(printWithTwoDecimals((it.nanoSeconds) /
                                                (processingTime * 10000000)),
