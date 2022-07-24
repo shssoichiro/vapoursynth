@@ -269,7 +269,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
     }
   }
   for (const auto &it : lines) {
-    for (int i = 0; i < it.depth; i++) {
+    for (int i = 0; i < (maxDepth - it.depth); i++) {
       s += "--";
     }
     int indent = 80 - (maxDepth - it.depth) * 2;
