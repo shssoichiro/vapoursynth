@@ -262,7 +262,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
       s += "--";
     }
     int indent = 30 - it.depth * 2;
-    if (indent < it.filterName.length()) {
+    if (indent < int(it.filterName.length())) {
       indent = it.filterName.length();
     }
     s += extendStringRight(it.filterName, indent) + " " +
