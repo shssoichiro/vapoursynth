@@ -185,36 +185,32 @@ struct NodeTimeRecord {
   int filterMode;
   int64_t nanoSeconds;
   int depth;
-  int dependency;
+  std::string creationFunction;
+  std::list<NodeTimeRecord> &children;
 
   bool operator<(const NodeTimeRecord &other) const noexcept {
-    if (depth != other.depth) {
-      return depth < other.depth;
-    }
-    if (dependency != other.dependency) {
-      return dependency > other.dependency;
-    }
     return nanoSeconds > other.nanoSeconds;
   }
 };
 
 static void printNodeTimesHelper(std::list<NodeTimeRecord> &lines,
                                  std::set<VSNode *> &visited, VSNode *node,
-                                 const VSAPI *vsapi, int depth, int dep_idx) {
+                                 const VSAPI *vsapi, int depth) {
   if (!visited.insert(node).second)
     return;
 
-  lines.push_back(
-      NodeTimeRecord{vsapi->getNodeName(node), vsapi->getNodeFilterMode(node),
-                     vsapi->getNodeFilterTime(node), depth, dep_idx});
-
   int numDeps = vsapi->getNumNodeDependencies(node);
   const VSFilterDependency *deps = vsapi->getNodeDependencies(node);
+  std::list<NodeTimeRecord> children;
 
   for (int i = 0; i < numDeps; i++) {
-    printNodeTimesHelper(lines, visited, deps[i].source, vsapi, depth + 1,
-                         lines.size() - 1);
+    printNodeTimesHelper(children, visited, deps[i].source, vsapi, depth + 1);
   }
+
+  lines.push_back(
+      NodeTimeRecord{vsapi->getNodeName(node), vsapi->getNodeFilterMode(node),
+                     vsapi->getNodeFilterTime(node), depth,
+                     vsapi->getNodeCreationFunctionName(node, 0), children});
 }
 
 static std::string extendStringRight(const std::string &s, size_t length) {
@@ -256,12 +252,13 @@ std::string printNodeTimes(VSNode *node, double processingTime,
   std::set<VSNode *> visited;
   std::string s;
 
-  printNodeTimesHelper(lines, visited, node, vsapi, 0, -1);
+  printNodeTimesHelper(lines, visited, node, vsapi, 0);
 
-  lines.sort();
+  //   lines.sort();
 
-  s += extendStringRight("Filter name", 80) + " " +
-       extendStringRight("Filter mode", 10) + " " +
+  s += extendStringRight("Filter name", 60) + " " +
+       //    extendStringRight("Filter mode", 10) + " " +
+       extendStringRight("Creation function", 60) + " " +
        extendStringLeft("Time (%)", 10) + " " +
        extendStringLeft("Time (s)", 10) + "\n";
 
@@ -275,12 +272,13 @@ std::string printNodeTimes(VSNode *node, double processingTime,
     for (int i = 0; i < (maxDepth - it.depth); i++) {
       s += "--";
     }
-    int indent = 80 - (maxDepth - it.depth) * 2;
+    int indent = 60 - (maxDepth - it.depth) * 2;
     if (indent < int(it.filterName.length())) {
       indent = it.filterName.length();
     }
     s += extendStringRight(it.filterName, indent) + " " +
-         extendStringRight(filterModeToString(it.filterMode), 10) + " " +
+         //  extendStringRight(filterModeToString(it.filterMode), 10) + " " +
+         extendStringRight(it.creationFunction, 60) + " " +
          extendStringLeft(printWithTwoDecimals((it.nanoSeconds) /
                                                (processingTime * 10000000)),
                           10) +
