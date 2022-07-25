@@ -184,7 +184,6 @@ struct NodeTimeRecord {
   std::string filterName;
   int filterMode;
   int64_t nanoSeconds;
-  int depth;
   std::string creationFunction;
   std::list<NodeTimeRecord> &children;
 
@@ -195,7 +194,7 @@ struct NodeTimeRecord {
 
 static void printNodeTimesHelper(std::list<NodeTimeRecord> &lines,
                                  std::set<VSNode *> &visited, VSNode *node,
-                                 const VSAPI *vsapi, int depth) {
+                                 const VSAPI *vsapi) {
   if (!visited.insert(node).second)
     return;
 
@@ -204,12 +203,12 @@ static void printNodeTimesHelper(std::list<NodeTimeRecord> &lines,
   std::list<NodeTimeRecord> children;
 
   for (int i = 0; i < numDeps; i++) {
-    printNodeTimesHelper(children, visited, deps[i].source, vsapi, depth + 1);
+    printNodeTimesHelper(children, visited, deps[i].source, vsapi);
   }
 
   lines.push_back(
       NodeTimeRecord{vsapi->getNodeName(node), vsapi->getNodeFilterMode(node),
-                     vsapi->getNodeFilterTime(node), depth,
+                     vsapi->getNodeFilterTime(node),
                      vsapi->getNodeCreationFunctionName(node, 0), children});
 }
 
@@ -246,39 +245,32 @@ static std::string filterModeToString(int fm) {
     return "unordered";
 }
 
-std::string printNodeTimes(VSNode *node, double processingTime,
-                           const VSAPI *vsapi) {
-  std::list<NodeTimeRecord> lines;
-  std::set<VSNode *> visited;
-  std::string s;
-
-  printNodeTimesHelper(lines, visited, node, vsapi, 0);
-
-  //   lines.sort();
-
-  s += extendStringRight("Filter name", 60) + " " +
-       //    extendStringRight("Filter mode", 10) + " " +
-       extendStringRight("Creation function", 60) + " " +
-       extendStringLeft("Time (%)", 10) + " " +
-       extendStringLeft("Time (s)", 10) + "\n";
-
-  int maxDepth = 0;
+static int get_max_depth(std::list<NodeTimeRecord> &lines, int depth) {
+  int max_depth = depth;
   for (const auto &it : lines) {
-    if (it.depth > maxDepth) {
-      maxDepth = it.depth;
+    int new_depth = get_max_depth(it.children, depth + 1);
+    if (new_depth > depth) {
+      max_depth = new_depth;
     }
   }
+  return max_depth;
+}
+
+static void print_lines_tree(std::list<NodeTimeRecord> &lines, std::string &s,
+                             double processingTime, int max_depth, int depth) {
   for (const auto &it : lines) {
-    for (int i = 0; i < (maxDepth - it.depth); i++) {
+    print_lines_tree(it.children, s, processingTime, max_depth, depth + 1);
+
+    for (int i = 0; i < (max_depth - depth); i++) {
       s += "--";
     }
-    int indent = 60 - (maxDepth - it.depth) * 2;
+    int indent = 60 - (max_depth - depth) * 2;
     if (indent < int(it.filterName.length())) {
       indent = it.filterName.length();
     }
     s += extendStringRight(it.filterName, indent) + " " +
-         //  extendStringRight(filterModeToString(it.filterMode), 10) + " " +
-         extendStringRight(it.creationFunction, 60) + " " +
+         extendStringRight(filterModeToString(it.filterMode), 10) + " " +
+         extendStringRight(it.creationFunction, 30) + " " +
          extendStringLeft(printWithTwoDecimals((it.nanoSeconds) /
                                                (processingTime * 10000000)),
                           10) +
@@ -287,6 +279,26 @@ std::string printNodeTimes(VSNode *node, double processingTime,
                           10) +
          "\n";
   }
+}
+
+std::string printNodeTimes(VSNode *node, double processingTime,
+                           const VSAPI *vsapi) {
+  std::list<NodeTimeRecord> lines;
+  std::set<VSNode *> visited;
+  std::string s;
+
+  printNodeTimesHelper(lines, visited, node, vsapi);
+
+  //   lines.sort();
+
+  s += extendStringRight("Filter name", 60) + " " +
+       extendStringRight("Filter mode", 10) + " " +
+       extendStringRight("Creation function", 30) + " " +
+       extendStringLeft("Time (%)", 10) + " " +
+       extendStringLeft("Time (s)", 10) + "\n";
+
+  int max_depth = get_max_depth(lines, 0);
+  print_lines_tree(lines, s, processingTime, max_depth, 0);
 
   return s;
 }
