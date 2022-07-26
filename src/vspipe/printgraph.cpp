@@ -262,10 +262,10 @@ static void print_lines_tree(const std::list<NodeTimeRecord> &lines,
   for (const auto &it : lines) {
     print_lines_tree(it.children, s, processingTime, max_depth, depth + 1);
 
-    for (int i = 0; i < (max_depth - depth); i++) {
+    for (int i = 1; i < (max_depth - depth); i++) {
       s += "--";
     }
-    int indent = 60 - (max_depth - depth) * 2;
+    int indent = 50 - (max_depth - depth + 1) * 2;
     if (indent < int(it.filterName.length())) {
       indent = it.filterName.length();
     }
@@ -292,7 +292,7 @@ std::string printNodeTimes(VSNode *node, double processingTime,
 
   //   lines.sort();
 
-  s += extendStringRight("Filter name", 60) + " " +
+  s += extendStringRight("Filter name", 50) + " " +
        extendStringRight("Filter mode", 10) + " " +
        extendStringRight("Creation function", 30) + " " +
        extendStringLeft("Time (%)", 10) + " " +
