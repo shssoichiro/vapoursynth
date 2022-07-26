@@ -185,7 +185,7 @@ struct NodeTimeRecord {
   int filterMode;
   int64_t nanoSeconds;
   std::string creationFunction;
-  std::list<NodeTimeRecord> &children;
+  std::list<NodeTimeRecord> children;
 
   bool operator<(const NodeTimeRecord &other) const noexcept {
     return nanoSeconds > other.nanoSeconds;
@@ -245,11 +245,10 @@ static std::string filterModeToString(int fm) {
     return "unordered";
 }
 
-static int get_max_depth(std::list<NodeTimeRecord> &lines, int depth) {
+static int get_max_depth(const std::list<NodeTimeRecord> &lines, int depth) {
   int max_depth = depth;
-  fprintf(stderr, "get_max_depth %d\n", lines.size());
+  fprintf(stderr, "get_max_depth %ld %d\n", lines.size(), depth);
   for (const auto &it : lines) {
-    fprintf(stderr, "In get_max_depth for\n");
     int new_depth = get_max_depth(it.children, depth + 1);
     if (new_depth > depth) {
       max_depth = new_depth;
@@ -258,9 +257,10 @@ static int get_max_depth(std::list<NodeTimeRecord> &lines, int depth) {
   return max_depth;
 }
 
-static void print_lines_tree(std::list<NodeTimeRecord> &lines, std::string &s,
-                             double processingTime, int max_depth, int depth) {
-  fprintf(stderr, "print_lines_tree %d lines / %d depth / %d max_depth\n",
+static void print_lines_tree(const std::list<NodeTimeRecord> &lines,
+                             std::string &s, double processingTime,
+                             int max_depth, int depth) {
+  fprintf(stderr, "print_lines_tree %ld lines / %d depth / %d max_depth\n",
           lines.size(), depth, max_depth);
   for (const auto &it : lines) {
     print_lines_tree(it.children, s, processingTime, max_depth, depth + 1);
