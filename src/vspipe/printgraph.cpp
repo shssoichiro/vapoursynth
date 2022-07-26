@@ -184,7 +184,6 @@ struct NodeTimeRecord {
   std::string filterName;
   int filterMode;
   int64_t nanoSeconds;
-  std::string creationFunction;
   std::list<NodeTimeRecord> children;
 
   bool operator<(const NodeTimeRecord &other) const noexcept {
@@ -206,10 +205,9 @@ static void printNodeTimesHelper(std::list<NodeTimeRecord> &lines,
     printNodeTimesHelper(children, visited, deps[i].source, vsapi);
   }
 
-  lines.push_back(
-      NodeTimeRecord{vsapi->getNodeName(node), vsapi->getNodeFilterMode(node),
-                     vsapi->getNodeFilterTime(node),
-                     vsapi->getNodeCreationFunctionName(node, 0), children});
+  lines.push_back(NodeTimeRecord{vsapi->getNodeName(node),
+                                 vsapi->getNodeFilterMode(node),
+                                 vsapi->getNodeFilterTime(node), children});
 }
 
 static std::string extendStringRight(const std::string &s, size_t length) {
@@ -271,7 +269,6 @@ static void print_lines_tree(const std::list<NodeTimeRecord> &lines,
     }
     s += extendStringRight(it.filterName, indent) + " " +
          extendStringRight(filterModeToString(it.filterMode), 10) + " " +
-         extendStringRight(it.creationFunction, 30) + " " +
          extendStringLeft(printWithTwoDecimals((it.nanoSeconds) /
                                                (processingTime * 10000000)),
                           10) +
@@ -294,7 +291,6 @@ std::string printNodeTimes(VSNode *node, double processingTime,
 
   s += extendStringRight("Filter name", 50) + " " +
        extendStringRight("Filter mode", 10) + " " +
-       extendStringRight("Creation function", 30) + " " +
        extendStringLeft("Time (%)", 10) + " " +
        extendStringLeft("Time (s)", 10) + "\n";
 
