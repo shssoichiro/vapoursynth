@@ -265,7 +265,7 @@ static void print_lines_tree(const std::list<NodeTimeRecord> &lines,
     for (int i = 1; i < (max_depth - depth); i++) {
       s += "--";
     }
-    int indent = 50 - (max_depth - depth + 1) * 2;
+    int indent = 50 - (max_depth - depth - 1) * 2;
     if (indent < int(it.filterName.length())) {
       indent = it.filterName.length();
     }
